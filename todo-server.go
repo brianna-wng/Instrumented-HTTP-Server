@@ -9,7 +9,6 @@ import (
 	"strings"       // string manipulation
 	"sync"          // synchronization primitives, ex. mutexes for safe concurrent access
 	"time"
-	"bytes"
 	"os"
 
 	"github.com/DataDog/datadog-go/v5/statsd"
@@ -62,6 +61,7 @@ func getTodos(w http.ResponseWriter, req *http.Request) {
 // handles POST /todos and responds with newly created todo as JSON
 func addTodo(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
+
 	if req.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed) // 405 Method Not Allowed
 		return
@@ -93,6 +93,8 @@ func addTodo(w http.ResponseWriter, req *http.Request) {
 }
 
 func markCompleted(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+
 	if req.Method != "PUT" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -102,6 +104,7 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid todo ID", http.StatusBadRequest) // 400
+		logger.Printf("PUT /todos/%s: invalid todo ID: %v", idStr, err)
 		return
 	}
 
@@ -112,11 +115,16 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 			todos[i].Completed = true
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(todos[i])
+
+			statsdClient.Timing("mark_completed.duration", time.Since(start), nil, 1)
+			statsdClient.Count("mark_completed.count", 1, nil, 1)
+			logger.Printf("PUT /todos/%d: marked todo ID %d as completed", id, id)
 			return
 		}
 	}
 
 	http.Error(w, "Todo not found", http.StatusNotFound) // 404 Not Found
+	logger.Printf("PUT /todos/%d: todo ID %d not found", id, id)
 }
 
 func main() {
