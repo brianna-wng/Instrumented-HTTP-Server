@@ -10,6 +10,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetTodos(t *testing.T) {
+	// reset state and populate with set todos
+	todos = []Todo{
+		{ID: 1, Title: "Test Task", Completed: false},
+		{ID: 2, Title: "Test Task 2", Completed: true},
+		{ID: 3, Title: "Test Task 3", Completed: false},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/todos", nil)
+	w := httptest.NewRecorder()
+
+	getTodos(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	var received []Todo
+	err := json.NewDecoder(res.Body).Decode(&received)
+	assert.NoError(t, err)
+	assert.Len(t, received, 3)
+	assert.Equal(t, todos, received)
+}
+
 func TestAddTodo(t *testing.T) {
 	// reset shared state to ensure tests are isolated
 	todos = []Todo{}

@@ -2,37 +2,37 @@ package main
 
 import (
 	"encoding/json" // encode/decode JSON data
-	"fmt" // formatted I/O
-	"log" // logging errors
-	"net/http" // building HTTP servers
-	"strconv" // convert strings to integers
-	"strings" // string manipulation
-	"sync" // synchronization primitives, ex. mutexes for safe concurrent access
+	"fmt"           // formatted I/O
+	"log"           // logging errors
+	"net/http"      // building HTTP servers
+	"strconv"       // convert strings to integers
+	"strings"       // string manipulation
+	"sync"          // synchronization primitives, ex. mutexes for safe concurrent access
 )
 
 // creating struct for each todo
 type Todo struct {
-	ID int `json:"id"` // specifies how fields are named when serialized/deserialized in JSON, capitalized letters represent exported/public fields
-	Title string `json:"title"`
-	Completed bool `json:"completed"`
+	ID        int    `json:"id"` // specifies how fields are named when serialized/deserialized in JSON, capitalized letters represent exported/public fields
+	Title     string `json:"title"`
+	Completed bool   `json:"completed"`
 }
 
 var (
-	todos = []Todo{} // dynamic array holding Todo structs
-	nextID = 1
+	todos   = []Todo{} // dynamic array holding Todo structs
+	nextID  = 1
 	todoMux = sync.Mutex{} // mutex/lock to ensure safe concurrent access to todos slice
 )
 
 // handles GET /todos and writes todos to response
 func getTodos(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json") // set response header so clients know they're getting a JSON
-	todoMux.Lock() // lock mutex to safely access todos
-	defer todoMux.Unlock() // mutex unlocks at end of function
-	json.NewEncoder(w).Encode(todos) // serializes todos and writes to response
+	todoMux.Lock()                                     // lock mutex to safely access todos
+	defer todoMux.Unlock()                             // mutex unlocks at end of function
+	json.NewEncoder(w).Encode(todos)                   // serializes todos and writes to response
 }
 
 // handles POST /todos and responds with newly created todo as JSON
-func addTodo (w http.ResponseWriter, req *http.Request) {
+func addTodo(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed) // 405 Method Not Allowed
 		return
@@ -40,7 +40,7 @@ func addTodo (w http.ResponseWriter, req *http.Request) {
 
 	var newTodo Todo
 	err := json.NewDecoder(req.Body).Decode(&newTodo) // decodes request body into newTodo
-	if err != nil || strings.TrimSpace (newTodo.Title) == "" {
+	if err != nil || strings.TrimSpace(newTodo.Title) == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest) // 400 Bad Request
 		return
 	}
@@ -57,7 +57,7 @@ func addTodo (w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(newTodo)
 }
 
-func markCompleted (w http.ResponseWriter, req *http.Request) {
+func markCompleted(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "PUT" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
