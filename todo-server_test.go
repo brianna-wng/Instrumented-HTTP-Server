@@ -57,3 +57,29 @@ func TestAddTodo(t *testing.T) {
 	assert.Equal(t, 1, todo.ID)
 	assert.False(t, todo.Completed)
 }
+
+func TestMarkCompleted(t *testing.T) {
+	// reset shared state to ensure tests are isolated
+	todos = []Todo{
+		{ID: 1, Title: "Test Task", Completed: false},
+		{ID: 2, Title: "Test Task 2", Completed: true},
+		{ID: 3, Title: "Test Task 3", Completed: false},
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/todos/1", nil)
+	w := httptest.NewRecorder()
+
+	markCompleted(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	var updated Todo
+	err := json.NewDecoder(res.Body).Decode(&updated)
+	assert.NoError(t, err)
+	assert.Equal(t, "Test Task", updated.Title)
+	assert.Equal(t, 1, updated.ID)
+	assert.True(t, updated.Completed)
+}
