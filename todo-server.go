@@ -71,6 +71,7 @@ func addTodo(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&newTodo) // decodes request body into newTodo
 	if err != nil || strings.TrimSpace(newTodo.Title) == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest) // 400 Bad Request
+		logger.Printf("POST /todos invalid body: %v", err)
 		return
 	}
 
@@ -84,6 +85,11 @@ func addTodo(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // 201 Created
 	json.NewEncoder(w).Encode(newTodo)
+
+	statsdClient.Timing("add_todo.duration", time.Since(start), nil, 1)
+	statsdClient.Count("add_todo.count", 1, nil, 1)
+	statsdClient.Gauge("todos.length", float64(len(todos)), nil, 1)
+	logger.Printf("POST /todos: added todo with ID %d", newTodo.ID)
 }
 
 func markCompleted(w http.ResponseWriter, req *http.Request) {
