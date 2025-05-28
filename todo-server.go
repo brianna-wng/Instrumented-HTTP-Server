@@ -10,6 +10,7 @@ import (
 	"sync"          // synchronization primitives, ex. mutexes for safe concurrent access
 	"time"
 	"bytes"
+	"os"
 
 	"github.com/DataDog/datadog-go/v5/statsd"
 )
@@ -26,7 +27,7 @@ var (
 	nextID  = 1
 	todoMux = sync.Mutex{} // mutex/lock to ensure safe concurrent access to todos slice
 	statsdClient *statsd.Client
-	logger *log.logger
+	logger *log.Logger
 )
 
 func init() {
@@ -60,6 +61,7 @@ func getTodos(w http.ResponseWriter, req *http.Request) {
 
 // handles POST /todos and responds with newly created todo as JSON
 func addTodo(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
 	if req.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed) // 405 Method Not Allowed
 		return
@@ -112,11 +114,6 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	dogstatsd_client, err := statsd.New("127.0.0.1:8125")
-    if err != nil {
-        log.Fatal(err)
-    }
-
 	http.HandleFunc("/todos", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "GET" {
 			getTodos(w, req)
