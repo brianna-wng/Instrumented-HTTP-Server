@@ -8,6 +8,10 @@ import (
 	"strconv"       // convert strings to integers
 	"strings"       // string manipulation
 	"sync"          // synchronization primitives, ex. mutexes for safe concurrent access
+	"time"
+	"bytes"
+
+	"github.com/DataDog/datadog-go/v5/statsd"
 )
 
 // creating struct for each todo
@@ -21,14 +25,37 @@ var (
 	todos   = []Todo{} // dynamic array holding Todo structs
 	nextID  = 1
 	todoMux = sync.Mutex{} // mutex/lock to ensure safe concurrent access to todos slice
+	statsdClient *statsd.Client
+	logger *log.logger
 )
+
+func init() {
+	var err error
+	statsdClient, err = statsd.New("127.0.0.1:8125")
+	if err != nil {
+		log.Fatalf("Error creating statsd client: %v", err)
+	}
+
+	file, err := os.OpenFile("todo-server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Error creating log file: %v", err)
+	}
+	logger = log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+}
 
 // handles GET /todos and writes todos to response
 func getTodos(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+	
 	w.Header().Set("Content-Type", "application/json") // set response header so clients know they're getting a JSON
 	todoMux.Lock()                                     // lock mutex to safely access todos
-	defer todoMux.Unlock()                             // mutex unlocks at end of function
 	json.NewEncoder(w).Encode(todos)                   // serializes todos and writes to response
+	todoMux.Unlock()
+
+	statsdClient.Timing("get_todos.duration", time.Since(start), nil, 1)
+	statsdClient.Count("get_todos.count", 1, nil, 1)
+	logger.Printf("GET /todos: %d todos returned", len(todos))
+
 }
 
 // handles POST /todos and responds with newly created todo as JSON
@@ -85,6 +112,11 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	dogstatsd_client, err := statsd.New("127.0.0.1:8125")
+    if err != nil {
+        log.Fatal(err)
+    }
+
 	http.HandleFunc("/todos", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "GET" {
 			getTodos(w, req)
@@ -98,5 +130,6 @@ func main() {
 	http.HandleFunc("/todos/", markCompleted)
 
 	fmt.Println("Server started on http://localhost:8090")
+	logger.Println("Server started on http://localhost:8090")
 	log.Fatal(http.ListenAndServe(":8090", nil))
 }
