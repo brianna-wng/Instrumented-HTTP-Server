@@ -9,7 +9,7 @@ import (
 	"strings"       // string manipulation
 	"sync"          // synchronization primitives, ex. mutexes for safe concurrent access
 	"time"
-	"bytes"
+	"os"
 
 	"github.com/DataDog/datadog-go/v5/statsd"
 )
@@ -26,7 +26,7 @@ var (
 	nextID  = 1
 	todoMux = sync.Mutex{} // mutex/lock to ensure safe concurrent access to todos slice
 	statsdClient *statsd.Client
-	logger *log.logger
+	logger *log.Logger
 )
 
 func init() {
@@ -60,6 +60,8 @@ func getTodos(w http.ResponseWriter, req *http.Request) {
 
 // handles POST /todos and responds with newly created todo as JSON
 func addTodo(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+
 	if req.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed) // 405 Method Not Allowed
 		return
@@ -69,6 +71,7 @@ func addTodo(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&newTodo) // decodes request body into newTodo
 	if err != nil || strings.TrimSpace(newTodo.Title) == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest) // 400 Bad Request
+		logger.Printf("POST /todos invalid body: %v", err)
 		return
 	}
 
@@ -82,9 +85,16 @@ func addTodo(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // 201 Created
 	json.NewEncoder(w).Encode(newTodo)
+
+	statsdClient.Timing("add_todo.duration", time.Since(start), nil, 1)
+	statsdClient.Count("add_todo.count", 1, nil, 1)
+	statsdClient.Gauge("todos.length", float64(len(todos)), nil, 1)
+	logger.Printf("POST /todos: added todo with ID %d", newTodo.ID)
 }
 
 func markCompleted(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+
 	if req.Method != "PUT" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -94,6 +104,7 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid todo ID", http.StatusBadRequest) // 400
+		logger.Printf("PUT /todos/%s: invalid todo ID: %v", idStr, err)
 		return
 	}
 
@@ -104,19 +115,19 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 			todos[i].Completed = true
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(todos[i])
+
+			statsdClient.Timing("mark_completed.duration", time.Since(start), nil, 1)
+			statsdClient.Count("mark_completed.count", 1, nil, 1)
+			logger.Printf("PUT /todos/%d: marked todo ID %d as completed", id, id)
 			return
 		}
 	}
 
 	http.Error(w, "Todo not found", http.StatusNotFound) // 404 Not Found
+	logger.Printf("PUT /todos/%d: todo ID %d not found", id, id)
 }
 
 func main() {
-	dogstatsd_client, err := statsd.New("127.0.0.1:8125")
-    if err != nil {
-        log.Fatal(err)
-    }
-
 	http.HandleFunc("/todos", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "GET" {
 			getTodos(w, req)

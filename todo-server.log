@@ -1,0 +1,4 @@
+INFO: 2025/05/28 16:40:24 todo-server.go:144: Server started on http://localhost:8090
+INFO: 2025/05/28 16:40:53 todo-server.go:57: GET /todos: 3 todos returned
+INFO: 2025/05/28 16:40:53 todo-server.go:92: POST /todos: added todo with ID 1
+INFO: 2025/05/28 16:40:53 todo-server.go:121: PUT /todos/1: marked todo ID 1 as completed
