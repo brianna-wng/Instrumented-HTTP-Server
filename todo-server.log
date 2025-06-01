@@ -2,3 +2,13 @@ INFO: 2025/05/28 16:40:24 todo-server.go:144: Server started on http://localhost
 INFO: 2025/05/28 16:40:53 todo-server.go:57: GET /todos: 3 todos returned
 INFO: 2025/05/28 16:40:53 todo-server.go:92: POST /todos: added todo with ID 1
 INFO: 2025/05/28 16:40:53 todo-server.go:121: PUT /todos/1: marked todo ID 1 as completed
+INFO: 2025/06/01 17:01:07 todo-server.go:144: Server started on http://localhost:8090
+INFO: 2025/06/01 17:01:55 todo-server.go:92: POST /todos: added todo with ID 1
+INFO: 2025/06/01 17:02:44 todo-server.go:92: POST /todos: added todo with ID 2
+INFO: 2025/06/01 17:02:51 todo-server.go:92: POST /todos: added todo with ID 3
+INFO: 2025/06/01 17:03:00 todo-server.go:57: GET /todos: 3 todos returned
+INFO: 2025/06/01 17:10:33 todo-server.go:57: GET /todos: 3 todos returned
+INFO: 2025/06/01 17:10:35 todo-server.go:57: GET /todos: 3 todos returned
+INFO: 2025/06/01 17:10:44 todo-server.go:57: GET /todos: 3 todos returned
+INFO: 2025/06/01 17:10:45 todo-server.go:57: GET /todos: 3 todos returned
+INFO: 2025/06/01 17:10:46 todo-server.go:57: GET /todos: 3 todos returned
