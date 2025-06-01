@@ -52,8 +52,8 @@ func getTodos(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(todos)                   // serializes todos and writes to response
 	todoMux.Unlock()
 
-	statsdClient.Timing("get_todos.duration", time.Since(start), nil, 1)
-	statsdClient.Count("get_todos.count", 1, nil, 1)
+	statsdClient.Timing("get_todos.duration", time.Since(start), []string{"environment:dev"}, 1)
+	statsdClient.Count("get_todos.count", 1, []string{"environment:dev"}, 1)
 	logger.Printf("GET /todos: %d todos returned", len(todos))
 
 }
@@ -86,9 +86,9 @@ func addTodo(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusCreated) // 201 Created
 	json.NewEncoder(w).Encode(newTodo)
 
-	statsdClient.Timing("add_todo.duration", time.Since(start), nil, 1)
-	statsdClient.Count("add_todo.count", 1, nil, 1)
-	statsdClient.Gauge("todos.length", float64(len(todos)), nil, 1)
+	statsdClient.Timing("add_todo.duration", time.Since(start), []string{"environment:dev"}, 1)
+	statsdClient.Count("add_todo.count", 1, []string{"environment:dev"}, 1)
+	statsdClient.Gauge("todos.length", float64(len(todos)), []string{"environment:dev"}, 1)
 	logger.Printf("POST /todos: added todo with ID %d", newTodo.ID)
 }
 
@@ -116,8 +116,8 @@ func markCompleted(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(todos[i])
 
-			statsdClient.Timing("mark_completed.duration", time.Since(start), nil, 1)
-			statsdClient.Count("mark_completed.count", 1, nil, 1)
+			statsdClient.Timing("mark_completed.duration", time.Since(start), []string{"environment:dev"}, 1)
+			statsdClient.Count("mark_completed.count", 1, []string{"environment:dev"}, 1)
 			logger.Printf("PUT /todos/%d: marked todo ID %d as completed", id, id)
 			return
 		}
